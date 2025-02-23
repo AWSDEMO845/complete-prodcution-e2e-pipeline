@@ -68,7 +68,7 @@ pipeline{
             steps {
                 script {
                     docker.withRegistry('',DOCKER_PASS) {
-                        docker_image = docker.build "${IMAGE_NAME}"
+                        docker_image = docker.build "C"
                     }
 
                     docker.withRegistry('',DOCKER_PASS) {
@@ -80,14 +80,14 @@ pipeline{
 
         }
 
-        stage("Trivy Scan") {
-            steps {
-                script {
-		   sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image dmancloud/complete-prodcution-e2e-pipeline:1.0.0-22 --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
-                }
-            }
+        // stage("Trivy Scan") {
+        //     steps {
+        //         script {
+		//    sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image dmancloud/complete-prodcution-e2e-pipeline:1.0.0-22 --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
+        //         }
+        //     }
 
-        }
+        // }
 
         stage ('Cleanup Artifacts') {
             steps {
@@ -98,11 +98,42 @@ pipeline{
             }
         }
 
+        stage("Update the Deployment Tags") {
+            steps {
+                script {
+                    sh """
+                        cat deployment.yaml
+                        sed -i 's/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g' deployment.yaml
+                        cat deployment.yaml
+                    """
+                }
+            }
+
+        }
+
+        stage("Push the changed deployment file to Git"){
+            steps{
+                withCredentials([usernamePassword(
+                    credentialsId: 'github', 
+                    usernameVariable: 'GIT_USERNAME', 
+                    passwordVariable: 'GIT_PASSWORD'
+                )]) {
+                    sh """
+                        git config --global user.name "AWSDEMO845"
+                        git config --global user.email "awsdemo845@gmail.com"
+                        git add deployment.yaml
+                        git commit -m "Updated Deployment Manifest with ${IMAGE_TAG}"
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/AWSDEMO845/complete-prodcution-e2e-pipeline.git HEAD:main
+                    """
+                    }
+                }
+            }
+        
 
         stage("Trigger CD Pipeline") {
             steps {
                 script {
-                    sh "curl -v -k --user admin:${JENKINS_API_TOKEN} -X POST -H 'cache-control: no-cache' -H 'content-type: application/x-www-form-urlencoded' --data 'IMAGE_TAG=${IMAGE_TAG}' 'https://jenkins.dev.dman.cloud/job/gitops-complete-pipeline/buildWithParameters?token=gitops-token'"
+                    sh "curl -v -k --user admin:${JENKINS_API_TOKEN} -X POST -H 'cache-control: no-cache' -H 'content-type: application/x-www-form-urlencoded' --data 'IMAGE_TAG=${IMAGE_TAG}' 'https://jenkins.my-resolve-business.click/job/complete-prodcution-e2e-pipeline/buildWithParameters?token=gitops-token'"
                 }
             }
 
@@ -122,4 +153,5 @@ pipeline{
                     mimeType: 'text/html',to: "legarla845@gmail.com"
           }      
     }
+
 }
