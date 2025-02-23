@@ -25,7 +25,7 @@ pipeline{
     
         stage("Checkout from SCM"){
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/AWSDEMO845/complete-prodcution-e2e-pipeline/tree/main'
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/AWSDEMO845/complete-prodcution-e2e-pipeline.git'
             }
 
         }
