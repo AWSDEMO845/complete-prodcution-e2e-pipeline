@@ -3,10 +3,11 @@ kind: Ingress
 metadata:
   name: complete-prodcution-e2e-ingress
   annotations:
-    kubernetes.io/ingress.class: "traefik"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: app1.my-resolve-business.click
+  - host: app1.my-resolve-business.click  
     http:
       paths:
       - path: /
@@ -15,4 +16,4 @@ spec:
           service:
             name: complete-prodcution-e2e-svc
             port:
-              number: 8080 
+              number: 8080
